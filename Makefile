@@ -153,6 +153,7 @@ UPROGS=\
 	$U/_pingpong\
 	$U/_piperecourse\
 	$U/_primes\
+	$U/_find\
 
 ifeq ($(LAB),syscall)
 UPROGS += \
