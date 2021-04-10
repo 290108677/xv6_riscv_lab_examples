@@ -154,6 +154,8 @@ UPROGS=\
 	$U/_piperecourse\
 	$U/_primes\
 	$U/_find\
+	$U/_book_pipe\
+	$U/_xargs\
 
 ifeq ($(LAB),syscall)
 UPROGS += \

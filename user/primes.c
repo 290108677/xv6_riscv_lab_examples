@@ -5,11 +5,14 @@
 int
 main(int argc, char *argv[])
 {
+	//int to_parent[2];
 	int pc[35][2];
 	int childpid;
 	char num[35] = {0};
 	int max_num = 35;
 	int count = 0;
+	//int childcount = 0;
+	//pipe(to_parent);
 	//printf("%d", sizeof(num));
 top:
 	//pipe(cn);
@@ -40,10 +43,19 @@ top:
 	write( pc[count++][1], num, sizeof(num) );
 	if( count >= max_num -1 )
 		exit(0);
+	//childcount ++;
+	//write(to_parent[1], &childcount, sizeof(childcount));
 	childpid = fork();
 	if( childpid == 0 )
 		goto top;
 	int stat;
+	//int childwait = 1;
 	wait(&stat);
+	//read(to_parent[0], &childcount, sizeof(childcount));
+	//while(childwait++ >= childcount - 1){
+	//	wait(&stat);
+	//	read(to_parent[0], &childcount, sizeof(childcount));
+	//	printf("\n-----childwait=%d childcount=%d-----\n", childwait, childcount);
+	//}
 	exit(0);
 }
