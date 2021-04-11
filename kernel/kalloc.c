@@ -80,3 +80,46 @@ kalloc(void)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }
+
+uint64
+count_all(void)
+{
+	/*
+	uint64 n = 0, count = 1000;
+	uint64 *start = 0, *end = 0, *end_t = 0;
+	start = kalloc();
+	printf("PGSIZE%d\n", PGSIZE);
+	//if(start)
+	//	n = 4096;
+	do{
+		end_t = end;
+		if(start)
+			n += 4096;
+		end = kalloc();
+	}while(count--);
+	//freerange(start, end_t);
+	if(start != 0 && end != 0)
+		for(; start <= end; end -= 512)
+			kfree(end);
+	printf("MEM:%d,start:0x%x,end:0x%x\n", n, start, end_t);
+	return n;
+	*/
+	struct run *r;
+	uint64 n = 4096;
+	acquire(&kmem.lock);
+	r = kmem.freelist;
+	if(!r)
+	{
+		release(&kmem.lock);
+		printf("MEM:0\n");
+		return 0;
+	}
+	do
+	{
+		n += PGSIZE;
+		r = r->next;
+	}while(r->next);
+	release(&kmem.lock);
+	printf("MEM:%d\n", n);
+	return n;	
+}

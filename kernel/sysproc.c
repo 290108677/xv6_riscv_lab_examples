@@ -6,6 +6,8 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+//#include "kalloc.c"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -151,5 +153,29 @@ sys_trace(void)
 	argint(0, &arg_trace_id);
 	p->trace_id = arg_trace_id;
 	//printf("%d", arg_trace_id);
+	return 0;
+}
+
+//struct sysinfo;
+uint64
+sys_info(void)
+{
+	uint64 sys_p;
+	struct proc *p;
+	p = myproc();
+	struct sysinfo sys;
+	if(argaddr(0, &sys_p) < 0)
+	{
+		printf("Get arg failure\n");
+		return -1;
+	}
+	sys.nproc = sysinfo_process();
+	sys.freemem = count_all();
+	printf("%x\t%x\t%d\n", p->pagetable, sys_p, sizeof(sys));
+	if(copyout(p->pagetable, sys_p, (char *)&sys, sizeof(sys)) < 0)
+	{
+		printf("Copy out failure\n");
+		return -1;
+	}
 	return 0;
 }
