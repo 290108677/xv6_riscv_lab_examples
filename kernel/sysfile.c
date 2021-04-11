@@ -70,12 +70,19 @@ uint64
 sys_read(void)
 {
   struct file *f;
-  int n;
+  int n, rt;
   uint64 p;
 
   if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argaddr(1, &p) < 0)
+  {
+    //if(myproc()->trace_flag)
+//	    printf("%d\n", -1);
     return -1;
-  return fileread(f, p, n);
+  }
+  rt = fileread(f, p, n);
+  //if(myproc()->trace_flag)
+  //          printf("%d\n", rt);
+  return rt;
 }
 
 uint64

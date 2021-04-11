@@ -104,6 +104,7 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_wait(void);
 extern uint64 sys_write(void);
 extern uint64 sys_uptime(void);
+extern uint64 sys_trace(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -127,17 +128,63 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_trace]   sys_trace,
 };
 
 void
 syscall(void)
 {
-  int num;
+  int num, flag, show_flag = 0;
   struct proc *p = myproc();
-
+  flag = p->trace_flag;
   num = p->trapframe->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    //if(p->trace_flag == 1)
+	//printf("Start Trace");
+    if(flag)
+    {
+	//printf("%d: ", p->pid);
+	if(num == SYS_fork && (p->trace_id & (1<<SYS_fork)))
+		show_flag = 1, printf("%d: syscall fork ->", p->pid);
+	//else if(num == SYS_exit && (p->trace_id & (1<<SYS_exit)))
+	//	show_flag = 1, printf("%d: syscall exit ->", p->pid);
+	else if(num == SYS_wait && (p->trace_id & (1<<SYS_wait)))
+		show_flag = 1, printf("%d: syscall wait ->", p->pid);
+	else if(num == SYS_pipe && (p->trace_id & (1<<SYS_pipe)))
+		show_flag = 1, printf("%d: syscall pipe ->", p->pid);
+	else if(num == SYS_read && (p->trace_id & (1<<SYS_read)))
+		show_flag = 1, printf("%d: syscall read ->", p->pid);
+	else if(num == SYS_kill && (p->trace_id & (1<<SYS_kill)))
+		show_flag = 1, printf("%d: syscall kill ->", p->pid);
+	else if(num == SYS_exec && (p->trace_id & (1<<SYS_exec)))
+		show_flag = 1, printf("%d: syscall exec ->", p->pid);
+	else if(num == SYS_fstat && (p->trace_id & (1<<SYS_fstat)))
+		show_flag = 1, printf("%d: syscall fstat ->", p->pid);
+	else if(num == SYS_chdir && (p->trace_id & (1<<SYS_chdir)))
+		show_flag = 1, printf("%d: syscall chdir ->", p->pid);
+	else if(num == SYS_dup && (p->trace_id & (1<<SYS_dup)))
+		show_flag = 1, printf("%d: syscall dup ->", p->pid);
+	else if(num == SYS_getpid && (p->trace_id & (1<<SYS_getpid)))
+		show_flag = 1, printf("%d: syscall getpid ->", p->pid);
+	else if(num == SYS_sbrk && (p->trace_id & (1<<SYS_sbrk)))
+		show_flag = 1, printf("%d: syscall sbrk ->", p->pid);
+	else if(num == SYS_sleep && (p->trace_id & (1<<SYS_sleep)))
+		show_flag = 1, printf("%d: syscall sleep ->", p->pid);
+	else if(num == SYS_uptime && (p->trace_id & (1<<SYS_uptime)))
+		show_flag = 1, printf("%d: syscall uptime ->", p->pid);
+	else if(num == SYS_open && (p->trace_id & (1<<SYS_open)))
+		show_flag = 1, printf("%d: syscall open ->", p->pid);
+	else if(num == SYS_write && (p->trace_id & (1<<SYS_write)))
+		show_flag = 1, printf("%d: syscall write ->", p->pid);
+	else if(num == SYS_mknod && (p->trace_id & (1<<SYS_mknod)))
+		show_flag = 1, printf("%d: syscall mknod ->", p->pid);
+	else if(num == SYS_close && (p->trace_id & (1<<SYS_close)))
+		show_flag = 1, printf("%d: syscall close ->", p->pid);
+	//printf("\n");
+    }
     p->trapframe->a0 = syscalls[num]();
+    if(show_flag)
+    	printf("%d\n", p->trapframe->a0);
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);

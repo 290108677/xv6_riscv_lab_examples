@@ -264,6 +264,8 @@ fork(void)
 
   // Allocate process.
   if((np = allocproc()) == 0){
+    if(myproc()->trace_flag)
+	    printf("%d\n", -1);
     return -1;
   }
 
@@ -271,6 +273,8 @@ fork(void)
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
     release(&np->lock);
+    if(myproc()->trace_flag)
+	    printf("%d\n", -1);
     return -1;
   }
   np->sz = p->sz;
@@ -297,6 +301,8 @@ fork(void)
 
   release(&np->lock);
 
+  if(myproc()->trace_flag)
+	  printf("%d\n", pid);
   return pid;
 }
 
