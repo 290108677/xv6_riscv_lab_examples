@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "defs.h"
 
+//Reference: https://www.cnblogs.com/YuanZiming/p/14219005.html
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -21,6 +22,17 @@ static void freeproc(struct proc *p);
 
 extern char trampoline[]; // trampoline.S
 
+void proc_kfreepagetable(pagetable_t pagetable) {
+	for(int i = 0; i < 512; i++){
+		pte_t pte = pagetable[i];
+		if((pte & PTE_V) && (pte & (PTE_R|PTE_W|PTE_X)) == 0){
+			uint64 child = PTE2PA(pte);
+			proc_kfreepagetable((pagetable_t)child);
+			pagetable[i] = 0;
+		}
+	}
+	kfree((void*)pagetable);
+}
 // initialize the proc table at boot time.
 void
 procinit(void)
@@ -40,6 +52,8 @@ procinit(void)
       uint64 va = KSTACK((int) (p - proc));
       kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
       p->kstack = va;
+
+      p->kpastack = (uint64)pa;
   }
   kvminithart();
 }
@@ -120,7 +134,11 @@ found:
     release(&p->lock);
     return 0;
   }
-
+  
+  p->kpagetable = kuvminit();
+	  //printf("s k \n");
+  kuvmmap(p->kpagetable, (uint64)p->kstack, (uint64)p->kpastack, PGSIZE, PTE_R | PTE_W);
+  //printf("e k \n");
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
@@ -141,6 +159,9 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
+  if(p->kpagetable)
+	   proc_kfreepagetable(p->kpagetable);
+  p->kpagetable = 0;
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -185,6 +206,7 @@ proc_pagetable(struct proc *p)
   return pagetable;
 }
 
+
 // Free a process's page table, and free the
 // physical memory it refers to.
 void
@@ -218,9 +240,15 @@ userinit(void)
   
   // allocate one user page and copy init's instructions
   // and data into it.
-  uvminit(p->pagetable, initcode, sizeof(initcode));
+  uvminit(p->kpagetable, p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
 
+  //vmprint(p->pagetable);
+  //vmprint(p->kpagetable);
+  //kvmcopy(p->pagetable, p->kpagetable, 0, p->sz);
+  //printf("---------------------------------------------%d", p->sz);
+  //vmprint(p->pagetable);
+  //vmprint(p->kpagetable);
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter
   p->trapframe->sp = PGSIZE;  // user stack pointer
@@ -245,6 +273,9 @@ growproc(int n)
   if(n > 0){
     if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
       return -1;
+    }
+    if(kvmcopy(p->pagetable, p->kpagetable, p->sz, p->sz + n) == -1){
+	    return -1;
     }
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
@@ -272,6 +303,11 @@ fork(void)
     freeproc(np);
     release(&np->lock);
     return -1;
+  }
+  if(kvmcopy(np->pagetable, np->kpagetable, 0, p->sz) < 0){
+	freeproc(np);
+	release(&np->lock);
+	return -1;
   }
   np->sz = p->sz;
 
@@ -445,7 +481,7 @@ wait(uint64 addr)
     sleep(p, &p->lock);  //DOC: wait-sleep
   }
 }
-
+extern pagetable_t kernel_pagetable;
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -473,6 +509,9 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+		//vmprint(p->kpagetable);
+	w_satp(MAKE_SATP(p->kpagetable));
+	sfence_vma();
         swtch(&c->context, &p->context);
 
         // Process is done running for now.
@@ -485,6 +524,8 @@ scheduler(void)
     }
 #if !defined (LAB_FS)
     if(found == 0) {
+	          w_satp(MAKE_SATP(kernel_pagetable));
+		        sfence_vma();
       intr_on();
       asm volatile("wfi");
     }

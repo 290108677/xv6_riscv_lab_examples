@@ -126,6 +126,9 @@ usertrapret(void)
   // and switches to user mode with sret.
   uint64 fn = TRAMPOLINE + (userret - trampoline);
   ((void (*)(uint64,uint64))fn)(TRAPFRAME, satp);
+
+  w_satp(MAKE_SATP(p->kpagetable));
+  sfence_vma();
 }
 
 // interrupts and exceptions from kernel code go here via kernelvec,
