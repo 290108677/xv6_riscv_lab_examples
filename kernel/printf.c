@@ -132,3 +132,14 @@ printfinit(void)
   initlock(&pr.lock, "pr");
   pr.locking = 1;
 }
+
+void 
+backtrace()
+{
+  printf("backtrace:\n");
+  uint64 loc_sp = r_fp();
+  do{
+    printf("%p\n", *((uint64 *)(loc_sp - 8)));
+    loc_sp = *((uint64 *)(loc_sp - 16));
+  }while(loc_sp > 0x0000000080000000);
+}
