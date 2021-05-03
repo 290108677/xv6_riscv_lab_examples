@@ -91,6 +91,8 @@ usertrapret(void)
 {
   struct proc *p = myproc();
 
+ 
+
   // we're about to switch the destination of traps from
   // kerneltrap() to usertrap(), so turn off interrupts until
   // we're back in user space, where usertrap() is correct.
@@ -118,8 +120,35 @@ usertrapret(void)
   // set S Exception Program Counter to the saved user pc.
   w_sepc(p->trapframe->epc);
 
+
   // tell trampoline.S the user page table to switch to.
   uint64 satp = MAKE_SATP(p->pagetable);
+
+  // printf("a");
+
+  if(p->flag == 1){
+    // printf("a");
+    // printf("tick %d\n", p->ticks);
+    p->ticks--;
+    if(p->ticks == 0){
+    //   printf("tick run\n");
+      p->tpb = *(p->trapframe);
+    //   // p->trapframe->ra = (uint64)(p->handler);
+      // p->tpb.ra = p->trapframe->epc;
+      p->flag = 3;
+      w_sepc((uint64)(p->handler));
+      
+      // p->trapframe->sp -= 1024;
+    }
+    // printf("aaaa");
+  }
+  else if (p->flag == 2)
+  {
+    *(p->trapframe) = p->tpb;
+    p->flag = 1;
+    w_sepc(p->trapframe->epc);
+  }
+  
 
   // jump to trampoline.S at the top of memory, which 
   // switches to the user page table, restores user registers,

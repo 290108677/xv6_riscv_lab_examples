@@ -97,3 +97,46 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_sigalarm(void)
+{
+  int tick;
+  argint(0, &tick);
+  void (*handler)();
+  uint64 fun;
+  argaddr(1, &fun);
+  handler = (void (*)())fun;
+  //handler();
+  // printf("Get tick %d, handler %p\n", tick, fun);
+
+
+  
+  struct proc *p = myproc();
+  if(p->flag != 0)
+    return 0;
+
+  if(tick == 0 && fun == 0){
+    p->flag = 0;
+    return 0;
+  }
+  tick += 1;
+  p->ticks_b = tick;
+  p->ticks = tick;
+  p->handler = handler;
+  p->flag = 1;
+
+  //w_sepc(p->trapframe->epc);
+  return 0;
+}
+
+uint64
+sys_sigreturn(void)
+{
+  struct proc *p = myproc();
+  // usertrapret();
+  p->ticks = p->ticks_b;
+  p->flag = 2;
+  // printf("Get tick %d\n", p->ticks);
+  return 0;
+}

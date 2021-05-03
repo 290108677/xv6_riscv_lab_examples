@@ -45,6 +45,7 @@ test0()
   int i;
   printf("test0 start\n");
   count = 0;
+  printf("Source fun %p\n", periodic);
   sigalarm(2, periodic);
   for(i = 0; i < 1000*500000; i++){
     if((i % 1000000) == 0)
@@ -60,11 +61,13 @@ test0()
   }
 }
 
-void __attribute__ ((noinline)) foo(int i, int *j) {
+void __attribute__ ((noinline)) foo(uint64 i, uint64 *j) {
+  
   if((i % 2500000) == 0) {
     write(2, ".", 1);
   }
   *j += 1;
+  // printf("j %d\n", j);
 }
 
 //
@@ -78,8 +81,8 @@ void __attribute__ ((noinline)) foo(int i, int *j) {
 void
 test1()
 {
-  int i;
-  int j;
+  uint64 i;
+  uint64 j;
 
   printf("test1 start\n");
   count = 0;
@@ -89,6 +92,7 @@ test1()
     if(count >= 10)
       break;
     foo(i, &j);
+    // printf("%d", j);
   }
   if(count < 10){
     printf("\ntest1 failed: too few calls to the handler\n");
@@ -100,6 +104,7 @@ test1()
     // occurred; another is that that registers may not be
     // restored correctly, causing i or j or the address ofj
     // to get an incorrect value.
+    printf("\ni %d j %d\n", i, j);
     printf("\ntest1 failed: foo() executed fewer times than it was called\n");
   } else {
     printf("test1 passed\n");
