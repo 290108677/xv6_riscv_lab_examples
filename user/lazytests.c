@@ -31,7 +31,7 @@ sparse_memory(char *s)
       exit(1);
     }
   }
-
+  // printf("test ddd\n");
   exit(0);
 }
 

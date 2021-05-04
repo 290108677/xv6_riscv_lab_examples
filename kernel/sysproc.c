@@ -17,6 +17,7 @@ sys_exit(void)
   return 0;  // not reached
 }
 
+
 uint64
 sys_getpid(void)
 {
@@ -46,9 +47,14 @@ sys_sbrk(void)
 
   if(argint(0, &n) < 0)
     return -1;
+  if(n < 0)
+    myproc()->killed = 1;
   addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
+  myproc()->sz += n;
+  // printf("sys_sbrk n %d\n", n);
+  // if(n < 0)
+  //   if(growproc(n) < 0)
+  //     return -1;
   return addr;
 }
 

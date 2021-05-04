@@ -67,6 +67,25 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+  } else if(r_scause() == 15) {
+    uint64 va = PGROUNDDOWN(r_stval());
+    if(va > p->sz){
+      printf("va is large than the maxium\n");
+      p->killed = 1;
+    }
+    else {
+      uint64 pa = (uint64)kalloc();
+      // printf("va %p pa %p sz %p\n", va, pa, p->sz);
+      if(pa != 0){
+        // printf("alloc mem success\n");
+        memset((void *) pa, 0, PGSIZE);
+        mappages(p->pagetable, va, PGSIZE, pa, PTE_W|PTE_U|PTE_R);
+      }
+      else {
+        p->killed = 1;
+        printf("there is no free mem\n");
+      }
+    }
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
